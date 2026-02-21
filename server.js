@@ -8,12 +8,16 @@ const app = express();
 /* =====================================================
    ================= MIDDLEWARE ========================
 ===================================================== */
+
 app.use(
   cors({
     origin: process.env.CORS_ORIGIN || "*",
     credentials: true,
   })
 );
+
+// 🔥 VERY IMPORTANT (You forgot this)
+app.use(express.json());
 
 /* =====================================================
    ================= SUPABASE CLIENT ===================
@@ -60,25 +64,12 @@ const verifyUser = async (req, res, next) => {
 ===================================================== */
 
 app.get("/", (req, res) => {
-  res.status(200).send("Backend Running");
+  res.status(200).json({ message: "Backend Running 🚀" });
 });
 
 /* =====================================================
    ===================== GAMES =========================
 ===================================================== */
-
-/*
-IMPORTANT:
-Make sure your Supabase "games" table contains:
-
-- id
-- title
-- description
-- price
-- steam_price   <-- ADD THIS COLUMN
-- image_url
-- category_id
-*/
 
 app.get("/api/games", async (req, res) => {
   try {
@@ -251,6 +242,10 @@ app.post("/api/orders", verifyUser, async (req, res) => {
       total_price,
     } = req.body;
 
+    if (!billing_name || !billing_email || !total_price) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
     const { data, error } = await supabase
       .from("orders")
       .insert([
@@ -274,26 +269,6 @@ app.post("/api/orders", verifyUser, async (req, res) => {
   } catch (err) {
     console.error("Order create error:", err.message);
     res.status(500).json({ error: "Failed to create order" });
-  }
-});
-
-app.get("/api/orders/:id", verifyUser, async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from("orders")
-      .select("*")
-      .eq("id", req.params.id)
-      .eq("user_id", req.user.id)
-      .single();
-
-    if (error) {
-      return res.status(404).json({ error: "Order not found" });
-    }
-
-    res.status(200).json(data);
-  } catch (err) {
-    console.error("Order fetch error:", err.message);
-    res.status(500).json({ error: "Server error" });
   }
 });
 
@@ -329,6 +304,10 @@ app.post("/api/contact", async (req, res) => {
   try {
     const { name, email, message } = req.body;
 
+    if (!name || !email || !message) {
+      return res.status(400).json({ error: "All fields required" });
+    }
+
     const { error } = await supabase
       .from("contact_message")
       .insert([{ name, email, message }]);
@@ -349,5 +328,5 @@ app.post("/api/contact", async (req, res) => {
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
